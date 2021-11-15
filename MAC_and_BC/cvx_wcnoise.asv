@@ -22,11 +22,12 @@ cum_Lyu = cumsum(Lyus);
 cum_Lyu = [0, cum_Lyu(1:end-1)];
 us = 1:U;
 
-[Q,D,~]=svd(Rxx);
+[Q,D,~]=svd(H*Rxx*H');
+[Q,D,~]=s
 rD = rank(D);
 sqD = sqrt(diag(D));
 sqD(rD+1:end) = 0;
-Htilde = H*Q*diag(sqD);
+Htilde = Q*diag(sqD);
 cvx_begin sdp quiet
 cvx_solver mosek
 cvx_precision high
