@@ -18,7 +18,7 @@ function [f, bn, Rxxs, En] = minPtone_cvx_var_Lxu(H, Lxu, theta, w)
 %     that optimizes the given function.
 % 3)  Rxxs, a 1 by U cell array containing the Rxx's for each user that
 %     optimizes the given function
-% 3)  En, a U by 1 vector containing the powers Of each user
+% 4)  En, a U by 1 vector containing the power of each user
 
 [Ly, ~] = size(H);
 U = length(theta);

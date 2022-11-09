@@ -1,4 +1,4 @@
-function [Rnn, sumRatebar] = cvx_wcnoise(Rxx, H, Lyu)
+function [Rnn, sumRatebar, S1, S2, S3, S4, S5, Z] = cvx_wcnoise(Rxx, H, Lyu)
 %cvx_wcnoise This function computes the worst-case noise for a given input
 %autocorrelation Rxx and channel matrix.
 %   Arguments:
@@ -9,7 +9,6 @@ function [Rnn, sumRatebar] = cvx_wcnoise(Rxx, H, Lyu)
 %       - Rnn: worst-case noise autocorrelation, with white local noise
 %       - sumRatebar: maximum sum rate/real-dimension
 
-eps_margin = 1e-9;
 [Ly,Lx] = size(H);
 if length(Lyu) == 1
     U = Ly/Lyu;
@@ -30,18 +29,18 @@ Htilde = H*Q*diag(sqD);
 cvx_begin sdp quiet
 cvx_solver mosek
 cvx_precision high
-variable Rnn(Ly, Ly) hermitian semidefinite
-variable Z(Lx, Lx) hermitian semidefinite
-dual variable S1{U}
-dual variable S2{U}
+variable Rnn(Ly, Ly) hermitian 
+variable Z(Lx, Lx) hermitian
+dual variables S1{U} S2{U} S3 S4 S5
 maximize log_det(eye(Lx) - Z)
 subject to
 for u = us
     S1{u}: eye(Lyus(u))==real(Rnn(cum_Lyu(u) + (1:Lyus(u)), cum_Lyu(u) + (1:Lyus(u))));
     S2{u}: 0==imag(Rnn(cum_Lyu(u) + (1:Lyus(u)), cum_Lyu(u) + (1:Lyus(u))));
 end
-Rnn - eps_margin*eye(Ly) ==  hermitian_semidefinite(Ly);
-[Rnn + Htilde*Htilde', Htilde; Htilde', Z] == hermitian_semidefinite(Ly+Lx);
+S3: Rnn == hermitian_semidefinite(Ly);
+S4: [Rnn + Htilde*Htilde', Htilde; Htilde', Z] == hermitian_semidefinite(Ly+Lx);
+S5: Z == hermitian_semidefinite(Lx);
 cvx_end
 
 sumRatebar = -0.5*log2(exp(1))*cvx_optval;

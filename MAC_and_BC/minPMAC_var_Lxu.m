@@ -1,4 +1,4 @@
-function [Rxxs, E, theta, bun] = minPMAC_var_Lxu(H, Lxu, bu_min, w)
+function [Rxxs, E, theta, bun] = minPMAC_var_Lxu(H, Lxu, bu_min, w, cb)
 % minPMAC_var_Lxu solves minimize sum_u(w_u*tr(Rxx(u))), subject to
 % bu>=bu_min
 % This program calls startEllipse_var_Lxu and minPtone_cvx_var_Lxu. CVX
@@ -9,11 +9,15 @@ function [Rxxs, E, theta, bun] = minPMAC_var_Lxu(H, Lxu, bu_min, w)
 %       antennas, Lx is the total number of transmit antennas and N is the
 %       total number of tones.
 %       H(:,:,n) is the channel matrix for all users on tone n.
+%       To generate H from a time-domain channel h, use fft(h, N, 3)
 % 2)    Lxu, a scalar or a length-U vector containing the number of
 %       transmit antennas of each user. If Lxu is a scalar, each user has
 %       Lxu antennas.
 % 3)    bu_min, a U by 1 vector containing the target rates for each user.
 % 4)    w, a U by 1 vector containing the weights for each user's power.
+% 5)    cb, a scalar indicator of whether a real-baseband channel (cb=2) or
+%       a complex-baseband channel (cb=1) is used. The default value is
+%       cb=1.
 
 % The outputs are:
 % 1)    Rxxs, cell array containing the Rxx's for each user on each tone.
@@ -24,6 +28,11 @@ function [Rxxs, E, theta, bun] = minPMAC_var_Lxu(H, Lxu, bu_min, w)
 %       weights of rates. theta also determines the decoding order.
 % 4)    bun, a U by N matrix containing the rates of each user on each tone
 
+tstart=tic;
+if nargin < 5
+    cb = 1;
+end
+bu_min = bu_min/(3-cb); % rate calculations are w.r.t. bit/real-dimension
 
 err = 1e-9;                              % error tolerance                             
 [~, ~, N] = size(H);
@@ -75,7 +84,7 @@ end
 if max(Lxu) == 1
     Rxxs = E;
 end
-bun = bun /log(2);          % conversion from nuts to bits
-
+bun = bun /log(2)*(3-cb);          % conversion from nut-rates/real-dimension to bit rates
+toc(tstart)
 end
     

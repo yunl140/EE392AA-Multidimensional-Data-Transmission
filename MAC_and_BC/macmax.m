@@ -62,6 +62,16 @@ cvx_solver mosek
         trace(Rxx) <= Esum;
 cvx_end
 
+% cvx_begin quiet
+% cvx_solver mosek
+%     variable Rxx1(Lx*N) nonnegative
+%     variable Rxx2(Lx*N) nonnegative
+%     maximize 0.5*(1/cb*log2(exp(1))*log_det(eye(N*Ly) + Hexpand*diag(Rxx1)*Hexpand')) + 0.5*(1/cb*log2(exp(1))*log_det(eye(N*Ly) + Hexpand*diag(Rxx2)*Hexpand'))
+%     subject to
+%         0.5*sum(Rxx1) + 0.5*sum(Rxx2) <= Esum;
+%         Rxx2(10)==0;
+% cvx_end
+
 bsum=cvx_optval;
 
 Rxxun_cell = reshape(num2cell(Rxxun, [1,2,3]), U, 1);

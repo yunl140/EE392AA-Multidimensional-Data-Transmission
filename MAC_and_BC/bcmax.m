@@ -20,41 +20,48 @@
 %       - b: maximum sum rate/real-dimension - user must mult by 2 for
 %            complex case
 
-function [Rxx, Rwcn, bmax] = bcmax(iRxx, H, Lyu)
+function [Rxx, Rwcn, bmin] = bcmax(iRxx, H, Lyu)
     
     [Ly,Lx,N] = size(H);
     total_en = trace(sum(iRxx, 3));
-    bmax = 0;
+    bmin = 0;
     ib=zeros(1,N);
     Rwcn = zeros(Ly,Ly,N);
     for n=1:N % worst-case noise independent over tones for BC
     [Rwcn(:,:,n), ib(n)] = cvx_wcnoise(iRxx(:,:,n), H(:,:,n), Lyu);
     end
     
-    while (abs(sum(ib) - bmax) > 1e-4) %tolerance
+    while (abs(sum(ib) - bmin) > 1e-5) %tolerance
         % uncomment the following two lines to see how the loop progresses
-        % bmax
-        % bmin = sum(ib)
+        %bmax
+        bmin = sum(ib);
      % Vector Coding Gains for each tone
         M=zeros(Lx,Lx,N);
         gains = zeros(Lx,N);
         for n=1:N 
-            Htil = sqrtm(Rwcn(:,:,n))\H(:,:,n);
+            [V,D,~]=svd(Rwcn(:,:,n));
+            sqD = sqrt(D).*(D>1e-6);
+            invsqRwcn = V*pinv(sqD)*V';
+            Htil = invsqRwcn*H(:,:,n);
             [~, g, M(:,:,n)] = svd(Htil);
             g=diag(g);
             gains(1:length(g),n)=g.^2;
         end
      % Water-filling step
         En = waterfill(total_en, reshape(gains',N*Lx,1), 1);
-        bvec=0.5*log2(ones(N*Lx,1)+En.*reshape(gains',N*Lx,1))'; 
-        bmax = real(sum(bvec));
+        %bvec=0.5*log2(ones(N*Lx,1)+En.*reshape(gains',N*Lx,1))'; 
+        %bmax = real(sum(bvec));
         En=reshape(En,N,Lx)';
      % update worst-case-noise step
         for n=1:N
-        iRxx(:,:,n) = M(:,:,n)*diag(En(:,n))*M(:,:,n)';
+            newiRxx = M(:,:,n)*diag(En(:,n))*M(:,:,n)';
+            iRxx(:,:,n) = (iRxx(:,:,n)+newiRxx)/2;
+            
+            %iRxx(:,:,n) = M(:,:,n)*diag(En(:,n))*M(:,:,n)';
            [Rwcn(:,:,n), ib(:,n)] = cvx_wcnoise(iRxx(:,:,n), H(:,:,n), Lyu);
         ib(:,n)=real(ib(:,n));
         end
     end
     Rxx = iRxx;
+    bmin = sum(ib);
 end
